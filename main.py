@@ -1,3 +1,5 @@
+import json
+
 import requests
 import os
 from datetime import datetime
@@ -28,6 +30,7 @@ def scrape(formatted_begin_date, formatted_end_date, pagenum):
     elements = driver.find_elements_by_class_name("known-transaction")
 
     if len(elements) != 0:
+        items = []
         for element in elements:
             tds = element.find_elements_by_tag_name("td")
             date = tds[0].text.split("\n")[0]
@@ -37,7 +40,7 @@ def scrape(formatted_begin_date, formatted_end_date, pagenum):
             transport_type = lines_split[0][1].split(" - ")[0]
             pto = lines_split[0][1].split(" - ")[1].replace(" ", "")
             time = lines_split[1][0]
-            time_object = datetime.strptime(f"{date} {time}", '%d-%m-%y %H:%M')
+            time_object = datetime.strptime(f"{date} {time}", '%d-%m-%Y %H:%M')
 
             # Place at which the validator was used
             transaction_info = lines_split[1][1]
@@ -65,13 +68,15 @@ def scrape(formatted_begin_date, formatted_end_date, pagenum):
                 "modalType": transport_type,
                 "productInfo": product_info,
                 "pto": pto,
-                "transactionDateTime": time_object.timetuple(),
+                "transactionDateTime": int(time_object.timestamp() * 1000),
                 "transactionInfo": transaction_info,
                 "transactionName": transaction_name,
                 "ePurseMut": purse_change
             }
-            print(item)
-    return
+            items.append(item)
+            print(json.dumps(item))
+        return items
+    return None
 
 
 def login(username, password):

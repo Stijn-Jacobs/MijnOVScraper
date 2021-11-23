@@ -11,5 +11,5 @@ LOGIN_USERNAME = "<your username on ov-chipkaart.nl>"
 LOGIN_PASSWORD = "<your password on ov-chipkaart.nl>"
 ```
 
-MEDIUM_ID can be get by going to [this](https://www.ov-chipkaart.nl/mijn-ov-chip/mijn-ov-reishistorie.htm) page, and selecting your card. In the url it will display your 'mediumid'.
+MEDIUM_ID can be retrieved by going to [this](https://www.ov-chipkaart.nl/mijn-ov-chip/mijn-ov-reishistorie.htm) page, and selecting your card. In the url it will display your 'mediumid'.
 You can also login manually in the browser opened by the selenium web driver, instead of setting it through the settings file.

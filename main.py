@@ -1,8 +1,13 @@
 import json
+import time
 
+import dateutil
 import requests
+from dateutil import relativedelta
+from dateutil.rrule import rrule, MONTHLY
 import os
-from datetime import datetime
+import calendar
+from datetime import datetime, timedelta
 import pathlib
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
@@ -11,6 +16,7 @@ from settings import *
 from webdriver_manager.chrome import ChromeDriverManager
 
 # Start selenium webdriver
+
 chrome_options = Options()
 scriptDirectory = pathlib.Path().absolute()
 chrome_options.add_argument(f"--user-data-dir={scriptDirectory}\\chrome-data-temp")
@@ -19,14 +25,16 @@ history_base_url = "https://www.ov-chipkaart.nl/mijn-ov-chip/mijn-ov-reishistori
 driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
 driver.get(history_base_url)
 
-default_timeout = 10
 
+def scrape(start_date, end_date, pagenum):
+    formatted_end_date = end_date.strftime("%d-%m-%Y")
+    formatted_start_date = start_date.strftime("%d-%m-%Y")
 
-loaded_entries = []
+    print(f"Scraping: {formatted_start_date} until {formatted_end_date} page number: {pagenum}")
 
-def scrape(formatted_begin_date, formatted_end_date, pagenum):
-    driver.get(f"{history_base_url}?mediumid={MEDIUM_ID}&begindate={formatted_begin_date}&enddate={formatted_end_date}&pagenumber={pagenum}")
-    driver.implicitly_wait(default_timeout)
+    driver.get(
+        f"{history_base_url}?mediumid={MEDIUM_ID}&begindate={formatted_start_date}&enddate={formatted_end_date}&pagenumber={pagenum}")
+    driver.implicitly_wait(4)
     elements = driver.find_elements_by_class_name("known-transaction")
 
     if len(elements) != 0:
@@ -37,8 +45,13 @@ def scrape(formatted_begin_date, formatted_end_date, pagenum):
             lines = tds[1].text.split("\n")
             lines_split = list(map(lambda line: line.split("   "), lines))
             transaction_name = lines_split[0][0]
-            transport_type = lines_split[0][1].split(" - ")[0]
-            pto = lines_split[0][1].split(" - ")[1].replace(" ", "")
+
+            transport_type = None
+            pto = None
+            if "Check-in" in transaction_name or "Check-uit" in transaction_name:
+                transport_type = lines_split[0][1].split(" - ")[0]
+                pto = lines_split[0][1].split(" - ")[1].replace(" ", "")
+
             time = lines_split[1][0]
             time_object = datetime.strptime(f"{date} {time}", '%d-%m-%Y %H:%M')
 
@@ -53,7 +66,7 @@ def scrape(formatted_begin_date, formatted_end_date, pagenum):
             product_info = None
             purse_change = None
             for index, line in enumerate(lines):
-                if "Product" in line:
+                if "Product:" in line:
                     product_info = lines_split[index][1]
                 elif "instaptarief" in line:
                     purse_change = lines_split[index][0].replace("€ ", "").replace(",", ".").replace(" ", "")
@@ -74,7 +87,6 @@ def scrape(formatted_begin_date, formatted_end_date, pagenum):
                 "ePurseMut": purse_change
             }
             items.append(item)
-            print(json.dumps(item))
         return items
     return None
 
@@ -94,12 +106,27 @@ def login(username, password):
     driver.find_element_by_id("btn-login").click()
 
 
-# Try and scrape all available pages.
-def full_scrape():
-    scrape("01-10-2020", "31-10-2020", 2)
+# Try and scrape all available pages. Until hit a certain date.
+def full_scrape(until):
+    items = []
+    for date in [dt for dt in rrule(MONTHLY, dtstart=until, until=datetime.today())]:
+        amount_of_days = calendar.monthrange(date.year, date.month)[1]
+        page_num = 1
+        while True:
+            scraped = scrape(date, date + timedelta(days=amount_of_days - 1), page_num)
+            page_num += 1
+            if scraped is None or len(scraped) == 0:
+                break
+            else:
+                items.extend(scraped)
+                time.sleep(1.0)
+    return items
+
+    # scrape("01-10-2020", "31-10-2020", 2)
 
 
 driver.implicitly_wait(2)
 login(LOGIN_USERNAME, LOGIN_PASSWORD)
-driver.implicitly_wait(default_timeout)
-full_scrape()
+driver.implicitly_wait(4)
+with open('data.json', 'w') as fp:
+    json.dump(full_scrape(datetime.today() - relativedelta.relativedelta(months=18)), fp)

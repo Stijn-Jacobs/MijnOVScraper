@@ -1,11 +1,7 @@
 import json
 import time
-
-import dateutil
-import requests
 from dateutil import relativedelta
 from dateutil.rrule import rrule, MONTHLY
-import os
 import calendar
 from datetime import datetime, timedelta
 import pathlib
@@ -16,7 +12,6 @@ from settings import *
 from webdriver_manager.chrome import ChromeDriverManager
 
 # Start selenium webdriver
-
 chrome_options = Options()
 scriptDirectory = pathlib.Path().absolute()
 chrome_options.add_argument(f"--user-data-dir={scriptDirectory}\\chrome-data-temp")
@@ -122,11 +117,10 @@ def full_scrape(until):
                 time.sleep(1.0)
     return items
 
-    # scrape("01-10-2020", "31-10-2020", 2)
-
 
 driver.implicitly_wait(2)
 login(LOGIN_USERNAME, LOGIN_PASSWORD)
 driver.implicitly_wait(4)
+
 with open('data.json', 'w') as fp:
     json.dump(full_scrape(datetime.today() - relativedelta.relativedelta(months=18)), fp)

@@ -2,6 +2,8 @@
 
 Previously this data was easily accesible through the API used by the mobile app. But since the app got taken down, so did the API endpoint. I still wanted to fetch my traveling data, so I've thrown together this scraper that scrapes the data from the ov-chipkaart.nl site.
 
+It generated a data.json file similar to the old format the api would return. 
+
 You only need to create a settings.py file, with the following:
 ```
 MEDIUM_ID = "<id of the card you want to fetch for>"

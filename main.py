@@ -8,6 +8,8 @@ import pathlib
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+
 from settings import *
 from webdriver_manager.chrome import ChromeDriverManager
 
@@ -30,7 +32,7 @@ def scrape(start_date, end_date, pagenum):
     driver.get(
         f"{history_base_url}?mediumid={MEDIUM_ID}&begindate={formatted_start_date}&enddate={formatted_end_date}&pagenumber={pagenum}")
     driver.implicitly_wait(4)
-    elements = driver.find_elements_by_class_name("known-transaction")
+    elements = driver.find_elements(By.CLASS_NAME, "known-transaction")
 
     if len(elements) != 0:
         items = []
@@ -89,16 +91,16 @@ def scrape(start_date, end_date, pagenum):
 def login(username, password):
     # Check if on login page
     try:
-        username_field = driver.find_element_by_id("username")
-        password_field = driver.find_element_by_id("password")
-        remind_input = driver.find_element_by_id("chkRemember")
+        username_field = driver.find_element(By.ID, "username")
+        password_field = driver.find_element(By.ID, "password")
+        remind_input = driver.find_element(By.ID, "chkRemember")
     except NoSuchElementException:
         return
 
     username_field.send_keys(username)
     password_field.send_keys(password)
     remind_input.click()
-    driver.find_element_by_id("btn-login").click()
+    driver.find_element(By.ID, "btn-login").click()
 
 
 # Try and scrape all available pages. Until hit a certain date.
